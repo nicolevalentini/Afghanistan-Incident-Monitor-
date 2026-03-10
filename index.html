@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Afghanistan Incident Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #f5f2ec;
+      --bg2:        #ffffff;
+      --bg3:        #faf8f4;
+      --border:     #ddd8ce;
+      --border2:    #e8e3da;
+      --text:       #1a1714;
+      --text2:      #3d3830;
+      --muted:      #7a6f62;
+      --muted2:     #a89f94;
+      --accent:     #b5341a;
+      --accent2:    #8a2512;
+      --green:      #1a6b3a;
+      --green-bg:   #e8f5ed;
+      --amber:      #92600a;
+      --amber-bg:   #fef3dc;
+      --blue:       #1a3d6b;
+      --blue-bg:    #e8eef5;
+      --shadow:     0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+      --shadow-lg:  0 2px 8px rgba(0,0,0,0.10), 0 8px 32px rgba(0,0,0,0.06);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    input, select, button, textarea { font-family: inherit; }
+    a { color: inherit; }
+
+    /* ── Header ── */
+    header {
+      background: var(--text);
+      padding: 0 40px;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .header-inner {
+      max-width: 1160px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+      height: 64px; gap: 16px;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-flag { font-size: 28px; line-height: 1; }
+    .header-title-block {}
+    .header-label {
+      font-size: 9px; letter-spacing: 0.25em; color: #a89f94;
+      text-transform: uppercase; margin-bottom: 1px;
+    }
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 18px; font-weight: 400;
+      color: #f5f2ec; letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+    .header-divider {
+      width: 1px; height: 32px; background: #3d3830; flex-shrink: 0;
+    }
+    .header-langs {
+      display: flex; gap: 6px; align-items: center;
+    }
+    .lang-pill {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+      border: 1px solid #3d3830; color: #a89f94;
+    }
+    .btn-export {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 8px 18px; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+      display: none;
+    }
+    .btn-export:hover { background: var(--accent2); }
+
+    /* ── Main ── */
+    main { max-width: 1160px; margin: 0 auto; padding: 32px 40px; }
+
+    /* ── Controls panel ── */
+    .controls-panel {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+    .controls-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
+    }
+    .field input[type=date] {
+      background: var(--bg3); border: 1.5px solid var(--border);
+      border-radius: 7px; padding: 9px 14px; color: var(--text);
+      font-size: 14px; font-family: inherit; outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input[type=date]:focus { border-color: var(--accent); }
+    .btn-fetch {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 7px;
+      padding: 10px 28px; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-fetch:hover { background: var(--accent2); }
+    .btn-fetch:disabled { background: var(--border); color: var(--muted2); cursor: not-allowed; }
+
+    /* ── Source status ── */
+    #source-status { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 16px; }
+    .src-pill {
+      display: flex; align-items: center; gap: 4px;
+      border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 500;
+      background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+    }
+    .src-pill.ok  { background: var(--green-bg); border-color: #b8dfc8; color: var(--green); }
+    .src-pill.err { background: #fdecea; border-color: #f5c6c0; color: var(--accent); }
+
+    /* ── Stats ── */
+    #stats { display: none; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-box {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      box-shadow: var(--shadow);
+    }
+    .stat-num { font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* ── Search bar ── */
+    #search-bar { display: none; margin-bottom: 16px; }
+    .search-wrap { position: relative; }
+    .search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--muted2); pointer-events: none; font-size: 15px;
+    }
+    #search-input {
+      width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 11px 16px 11px 42px;
+      color: var(--text); font-size: 14px; outline: none;
+      transition: border-color 0.15s; box-shadow: var(--shadow);
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--muted2); }
+    .search-count { font-size: 12px; color: var(--muted); margin-top: 6px; padding-left: 2px; }
+    mark {
+      background: #fde68a; color: #78350f;
+      border-radius: 2px; padding: 0 2px;
+    }
+
+    /* ── Filters ── */
+    #filters {
+      display: none; align-items: center; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 20px; padding: 14px 18px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: var(--shadow);
+    }
+    .filter-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+    .btn-filter {
+      background: transparent; border: 1.5px solid var(--border2);
+      color: var(--muted); border-radius: 20px; padding: 4px 14px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-filter:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    select.filter-select {
+      background: var(--bg3); border: 1.5px solid var(--border2);
+      color: var(--text2); border-radius: 20px; padding: 4px 12px;
+      font-size: 12px; font-weight: 500; cursor: pointer; outline: none;
+    }
+    .chk-label {
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      display: flex; align-items: center; gap: 6px; cursor: pointer;
+    }
+    .chk-label input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+    /* ── Article cards ── */
+    .article {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 22px; margin-bottom: 10px;
+      box-shadow: var(--shadow); transition: box-shadow 0.15s, border-color 0.15s;
+      border-left-width: 4px;
+    }
+    .article:hover { box-shadow: var(--shadow-lg); }
+    .article.verified { background: #f0faf4; border-color: #b8dfc8; }
+    .article.dismissed { background: var(--bg3); border-color: var(--border2); opacity: 0.55; }
+
+    .article-top { display: flex; gap: 14px; align-items: flex-start; }
+    .article-body { flex: 1; min-width: 0; }
+    .article-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+
+    .lang-badge {
+      border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .src-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+      border: 1px solid; white-space: nowrap;
+    }
+    .date-txt {
+      font-size: 11px; font-weight: 500; color: var(--muted2);
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 4px; padding: 2px 8px;
+    }
+    .verified-badge {
+      font-size: 11px; font-weight: 700; color: var(--green);
+      background: var(--green-bg); border: 1px solid #b8dfc8;
+      border-radius: 4px; padding: 2px 8px;
+    }
+    .dismissed-badge {
+      font-size: 11px; font-weight: 500; color: var(--muted);
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px;
+    }
+
+    .article-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; font-weight: 400; line-height: 1.4;
+      text-decoration: none; display: block; color: var(--text);
+      margin-bottom: 6px; transition: color 0.15s;
+    }
+    .article-title:hover { color: var(--accent); }
+    .article-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    .article-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: flex-start; }
+    .btn-action {
+      background: var(--bg3); border: 1.5px solid var(--border);
+      color: var(--text2); border-radius: 6px; padding: 6px 12px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-action:hover { border-color: var(--accent); color: var(--accent); background: #fdf3f1; }
+    .btn-verify.active {
+      background: var(--green-bg); border-color: #b8dfc8; color: var(--green);
+    }
+    .btn-verify.active:hover { background: #d4efde; }
+    .btn-dismiss { padding: 6px 10px; }
+    .btn-dismiss:hover { border-color: #f5c6c0; color: var(--accent); background: #fdecea; }
+
+    /* ── Meta editor ── */
+    .meta-editor {
+      background: var(--bg3); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 16px 18px; margin-top: 14px;
+    }
+    .meta-editor-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px;
+    }
+    .meta-fields { display: flex; gap: 10px; flex-wrap: wrap; }
+    .meta-field { flex: 1; min-width: 110px; }
+    .meta-field label {
+      display: block; font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;
+    }
+    .meta-field input {
+      width: 100%; background: var(--bg2); border: 1.5px solid var(--border);
+      border-radius: 6px; padding: 7px 10px; color: var(--text);
+      font-size: 13px; font-family: inherit; outline: none;
+      transition: border-color 0.15s;
+    }
+    .meta-field input:focus { border-color: var(--accent); }
+    .meta-field.wide { flex: 2; min-width: 200px; }
+
+    /* ── Empty / landing ── */
+    #empty { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    #empty h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 24px; font-weight: 400; color: var(--text2); margin-bottom: 8px;
+    }
+    #empty p { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+
+    /* ── Source grid ── */
+    .source-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 32px; }
+
+    /* ── Workflow guide ── */
+    .guide {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px 28px; text-align: left;
+      box-shadow: var(--shadow); max-width: 680px; margin: 0 auto;
+    }
+    .guide-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      color: var(--muted2); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .guide-step { display: flex; gap: 16px; margin-bottom: 12px; align-items: flex-start; }
+    .guide-step-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 15px; color: var(--accent); min-width: 80px; padding-top: 1px;
+    }
+    .guide-step-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 40px; font-size: 12px; color: var(--muted2);
+      border-top: 1px solid var(--border); padding-top: 20px;
+      text-align: center;
+    }
+
+    /* ── Config notice ── */
+    #config-notice {
+      background: var(--amber-bg); border: 1.5px solid #f5d78a;
+      border-radius: 8px; padding: 12px 18px; margin-bottom: 20px;
+      font-size: 13px; color: var(--amber); display: none;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      main { padding: 20px 16px; }
+      header { padding: 0 16px; }
+      #stats { grid-template-columns: repeat(2, 1fr); }
+      h1 { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="header-flag">🇦🇫</div>
+      <div class="header-title-block">
+        <div class="header-label">Internal Use Only · Security Monitoring</div>
+        <h1>Afghanistan Incident Monitor</h1>
+      </div>
+      <div class="header-divider"></div>
+      <div class="header-langs">
+        <span class="lang-pill">EN</span>
+        <span class="lang-pill">فا</span>
+        <span class="lang-pill">پښ</span>
+      </div>
+    </div>
+    <button class="btn-export" id="btn-export" onclick="exportCSV()">↓ Export CSV</button>
+  </div>
+</header>
+
+<main>
+  <div id="config-notice">
+    ⚙️ <strong>Setup required:</strong> Set <code>API_BASE_URL</code> in the script below to your backend URL.
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-panel">
+    <div class="controls-row">
+      <div class="field">
+        <label>From</label>
+        <input type="date" id="date-from" />
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input type="date" id="date-to" />
+      </div>
+      <button class="btn-fetch" id="btn-fetch" onclick="fetchFeed()">Fetch Latest News</button>
+    </div>
+    <div id="source-status"></div>
+  </div>
+
+  <!-- Stats -->
+  <div id="stats">
+    <div class="stat-box">
+      <div class="stat-num" id="stat-total" style="color:var(--text)">0</div>
+      <div class="stat-lbl">Total Articles</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-pending" style="color:var(--amber)">0</div>
+      <div class="stat-lbl">Pending Review</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-verified" style="color:var(--green)">0</div>
+      <div class="stat-lbl">Verified</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="stat-dismissed" style="color:var(--muted2)">0</div>
+      <div class="stat-lbl">Dismissed</div>
+    </div>
+  </div>
+
+  <!-- Search bar -->
+  <div id="search-bar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search articles… e.g. flogging, Kandahar, IED" oninput="render()" />
+    </div>
+    <div class="search-count" id="search-count"></div>
+  </div>
+
+  <!-- Filters -->
+  <div id="filters">
+    <span class="filter-label">Filter:</span>
+    <button class="btn-filter active" onclick="setLang('All', this)">All</button>
+    <button class="btn-filter" onclick="setLang('English', this)">English</button>
+    <button class="btn-filter" onclick="setLang('Farsi', this)">Farsi</button>
+    <button class="btn-filter" onclick="setLang('Pashto', this)">Pashto</button>
+    <select class="filter-select" id="src-filter" onchange="render()">
+      <option value="All">All Sources</option>
+    </select>
+    <button class="btn-filter" id="btn-sort" onclick="toggleSort()">Date ↓</button>
+    <label class="chk-label"><input type="checkbox" id="chk-verified" checked onchange="render()"> Show verified</label>
+    <label class="chk-label"><input type="checkbox" id="chk-dismissed" onchange="render()"> Show dismissed</label>
+  </div>
+
+  <!-- Article list -->
+  <div id="article-list"></div>
+
+  <!-- Empty / landing state -->
+  <div id="empty">
+    <div class="empty-icon">📡</div>
+    <h2>Ready to fetch news</h2>
+    <p>Optionally set a date range, then click <strong style="color:var(--accent)">Fetch Latest News</strong>.</p>
+    <div class="source-grid" id="source-grid"></div>
+    <div class="guide">
+      <div class="guide-title">How it works</div>
+      <div class="guide-step">
+        <div class="guide-step-num">1. Fetch</div>
+        <div class="guide-step-desc">Pulls the latest articles from 20 RSS sources. Afghan outlets show all articles; Reuters/BBC/RFE/RL are filtered for Afghanistan mentions.</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">2. Review</div>
+        <div class="guide-step-desc">Click <strong>▼ Fill Data</strong> on each article, read it, then fill in location, province, attack type, perpetrator, target, and casualties.</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">3. Verify</div>
+        <div class="guide-step-desc">Click <strong>Mark Verified</strong> to confirm a genuine incident. Click <strong>✕</strong> to dismiss irrelevant articles — you can restore them anytime.</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">4. Export</div>
+        <div class="guide-step-desc">Click <strong>Export CSV</strong> in the top right to download an Excel-ready file with all your structured data.</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Internal tool · 20 RSS sources · Always verify against primary sources before reporting</footer>
+</main>
+
+<script>
+  const API_BASE_URL = "https://afghanistan-incident-monitor.onrender.com";
+
+  let articles   = [];
+  let filterLang = "All";
+  let filterSrc  = "All";
+  let sortDir    = "desc";
+  let fetched    = false;
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!API_BASE_URL) {
+      document.getElementById("config-notice").style.display = "block";
+    }
+    if (API_BASE_URL) {
+      fetch(API_BASE_URL + "/api/sources")
+        .then(r => r.json())
+        .then(sources => {
+          const sel  = document.getElementById("src-filter");
+          const grid = document.getElementById("source-grid");
+          sources.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id; opt.textContent = s.name;
+            sel.appendChild(opt);
+            const badge = document.createElement("span");
+            badge.className = "src-badge";
+            badge.style.cssText = `background:${s.color}18;border-color:${s.color}44;color:${s.color}`;
+            badge.textContent = s.flag + " " + s.name;
+            grid.appendChild(badge);
+          });
+        }).catch(() => {});
+    }
+  });
+
+  async function fetchFeed() {
+    if (!API_BASE_URL) { alert("Please set API_BASE_URL first."); return; }
+    const btn = document.getElementById("btn-fetch");
+    btn.disabled = true; btn.textContent = "⟳ Fetching…";
+
+    const from = document.getElementById("date-from").value;
+    const to   = document.getElementById("date-to").value;
+    const params = new URLSearchParams();
+    if (from) params.set("date_from", from);
+    if (to)   params.set("date_to", to);
+
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/feed?${params}`);
+      if (!r.ok) throw new Error(`Server returned ${r.status}`);
+      const data = await r.json();
+
+      articles = data.items.map((item, i) => ({
+        ...item, _id: i, _meta: {}, _verified: false, _dismissed: false, _expanded: false,
+      }));
+
+      renderSourceStatus(data.sources);
+      fetched = true;
+      document.getElementById("empty").style.display = "none";
+      document.getElementById("stats").style.display = "grid";
+      document.getElementById("filters").style.display = "flex";
+      document.getElementById("search-bar").style.display = "block";
+      document.getElementById("search-input").value = "";
+      render();
+    } catch(e) {
+      alert("Error fetching feed: " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Fetch Latest News";
+    }
+  }
+
+  function renderSourceStatus(sources) {
+    const el = document.getElementById("source-status");
+    el.innerHTML = "";
+    Object.entries(sources).forEach(([id, info]) => {
+      const pill = document.createElement("div");
+      pill.className = "src-pill " + (info.status === "ok" ? "ok" : "err");
+      const icon  = info.status === "ok" ? "✓" : "✗";
+      const label = id.replace(/_/g, " ");
+      const count = info.status === "ok" ? ` (${info.count})` : "";
+      pill.textContent = icon + " " + label + count;
+      if (info.error) pill.title = info.error;
+      el.appendChild(pill);
+    });
+  }
+
+  function render() {
+    updateStats();
+    const showVerified  = document.getElementById("chk-verified").checked;
+    const showDismissed = document.getElementById("chk-dismissed").checked;
+    filterSrc = document.getElementById("src-filter").value;
+    const searchQuery = document.getElementById("search-input")?.value.trim().toLowerCase() || "";
+
+    let visible = articles.filter(a => {
+      if (!showDismissed && a._dismissed) return false;
+      if (!showVerified  && a._verified)  return false;
+      if (filterLang !== "All" && a.source_lang !== filterLang) return false;
+      if (filterSrc  !== "All" && a.source_id   !== filterSrc)  return false;
+      if (searchQuery) {
+        const hay = (a.title + " " + a.description + " " + a.source_name).toLowerCase();
+        if (!hay.includes(searchQuery)) return false;
+      }
+      return true;
+    });
+
+    visible.sort((a, b) => {
+      const da = a.date || "", db = b.date || "";
+      return sortDir === "desc" ? db.localeCompare(da) : da.localeCompare(db);
+    });
+
+    const list = document.getElementById("article-list");
+    list.innerHTML = "";
+
+    const countEl = document.getElementById("search-count");
+    if (searchQuery && countEl) {
+      countEl.textContent = visible.length === 0
+        ? "No articles match your search."
+        : `${visible.length} article${visible.length === 1 ? "" : "s"} match "${searchQuery}"`;
+    } else if (countEl) { countEl.textContent = ""; }
+
+    if (visible.length === 0 && fetched) {
+      list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:36px;margin-bottom:10px">🔍</div>
+        <div style="font-size:15px;color:var(--text2)">No articles found.</div>
+        <div style="font-size:13px;margin-top:6px">Try a different search term or widen the date range.</div>
+      </div>`;
+      return;
+    }
+    visible.forEach(a => list.appendChild(buildCard(a, searchQuery)));
+
+    const exportBtn = document.getElementById("btn-export");
+    const total = articles.filter(a => !a._dismissed).length;
+    exportBtn.style.display = total > 0 ? "block" : "none";
+    exportBtn.textContent = `↓ Export CSV (${total})`;
+  }
+
+  function updateStats() {
+    const total     = articles.filter(a => !a._dismissed).length;
+    const verified  = articles.filter(a => a._verified).length;
+    const dismissed = articles.filter(a => a._dismissed).length;
+    const pending   = articles.filter(a => !a._verified && !a._dismissed).length;
+    document.getElementById("stat-total").textContent     = total;
+    document.getElementById("stat-verified").textContent  = verified;
+    document.getElementById("stat-dismissed").textContent = dismissed;
+    document.getElementById("stat-pending").textContent   = pending;
+  }
+
+  function highlight(text, query) {
+    if (!query) return escHtml(text);
+    const esc = escHtml(text);
+    const q   = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return esc.replace(new RegExp(`(${q})`, "gi"), "<mark>$1</mark>");
+  }
+
+  function buildCard(a, searchQuery = "") {
+    const div = document.createElement("div");
+    div.className = "article " + (a._verified ? "verified" : a._dismissed ? "dismissed" : "pending");
+
+    const borderColor = a._verified ? "#6abf8a" : a._dismissed ? "#ddd8ce" : a.source_color;
+    div.style.borderLeftColor = borderColor;
+
+    const langColors = {
+      English: ["#dbeafe","#1e40af"],
+      Farsi:   ["#ede9fe","#5b21b6"],
+      Pashto:  ["#dcfce7","#166534"],
+    };
+    const [lbg, lfg] = langColors[a.source_lang] || ["#f3f4f6","#374151"];
+
+    div.innerHTML = `
+      <div class="article-top">
+        <div class="article-body">
+          <div class="article-meta">
+            <span class="lang-badge" style="background:${lbg};color:${lfg}">${a.source_lang}</span>
+            <span class="src-badge" style="background:${a.source_color}15;border-color:${a.source_color}40;color:${a.source_color}">${a.source_flag} ${a.source_name}</span>
+            <span class="date-txt">${a.date || "Unknown date"}</span>
+            ${a._verified ? '<span class="verified-badge">✓ Verified</span>' : ""}
+            ${a._dismissed ? '<span class="dismissed-badge">Dismissed</span>' : ""}
+          </div>
+          <a class="article-title" href="${escHtml(a.link)}" target="_blank" rel="noreferrer">${highlight(a.title, searchQuery)}</a>
+          ${a.description ? `<p class="article-desc">${highlight(a.description.slice(0, 240), searchQuery)}${a.description.length > 240 ? "…" : ""}</p>` : ""}
+        </div>
+        <div class="article-actions">
+          <button class="btn-action" onclick="toggleExpand(${a._id})">▼ Fill Data</button>
+          <button class="btn-action btn-verify ${a._verified ? "active" : ""}" onclick="toggleVerify(${a._id})">
+            ${a._verified ? "✓ Verified" : "Mark Verified"}
+          </button>
+          <button class="btn-action btn-dismiss" onclick="toggleDismiss(${a._id})" title="${a._dismissed ? "Restore" : "Dismiss"}">
+            ${a._dismissed ? "↩" : "✕"}
+          </button>
+        </div>
+      </div>
+      ${a._expanded ? buildMetaEditor(a) : ""}
+    `;
+    return div;
+  }
+
+  function buildMetaEditor(a) {
+    const m = a._meta;
+    const f = (key, label, ph) =>
+      `<div class="meta-field">
+        <label>${label}</label>
+        <input type="text" value="${escHtml(m[key]||"")}" placeholder="${ph}"
+          onchange="updateMeta(${a._id},'${key}',this.value)" />
+      </div>`;
+    return `
+      <div class="meta-editor">
+        <div class="meta-editor-title">Fill in structured data — then mark as verified</div>
+        <div class="meta-fields">
+          ${f("location",    "Location",    "City / District")}
+          ${f("province",    "Province",    "Province")}
+          ${f("attackType",  "Attack Type", "IED / Clash / Airstrike…")}
+          ${f("perpetrator", "Perpetrator", "Taliban / ISIS-K…")}
+          ${f("target",      "Target",      "Civilians / Forces…")}
+          ${f("killed",      "Killed",      "0")}
+          ${f("wounded",     "Wounded",     "0")}
+          <div class="meta-field wide">
+            <label>Notes</label>
+            <input type="text" value="${escHtml(m.notes||"")}" placeholder="Any additional context…"
+              onchange="updateMeta(${a._id},'notes',this.value)" />
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function toggleExpand(id)  { articles[id]._expanded = !articles[id]._expanded; render(); }
+  function toggleVerify(id)  { articles[id]._verified = !articles[id]._verified; articles[id]._dismissed = false; render(); }
+  function toggleDismiss(id) { articles[id]._dismissed = !articles[id]._dismissed; render(); }
+  function updateMeta(id, key, val) { articles[id]._meta[key] = val; updateStats(); }
+
+  function setLang(lang, btn) {
+    filterLang = lang;
+    document.querySelectorAll("#filters .btn-filter").forEach(b => {
+      if (["All","English","Farsi","Pashto"].includes(b.textContent.trim())) b.classList.remove("active");
+    });
+    btn.classList.add("active");
+    render();
+  }
+  function toggleSort() {
+    sortDir = sortDir === "desc" ? "asc" : "desc";
+    document.getElementById("btn-sort").textContent = "Date " + (sortDir === "desc" ? "↓" : "↑");
+    render();
+  }
+
+  function exportCSV() {
+    const headers = ["Date","Headline","Source","Language","URL",
+      "Location","Province","Attack Type","Perpetrator","Target",
+      "Killed","Wounded","Notes","Verified"];
+    const rows = articles
+      .filter(a => !a._dismissed)
+      .map(a => [
+        a.date, a.title, a.source_name, a.source_lang, a.link,
+        a._meta.location||"", a._meta.province||"", a._meta.attackType||"",
+        a._meta.perpetrator||"", a._meta.target||"",
+        a._meta.killed||"", a._meta.wounded||"", a._meta.notes||"",
+        a._verified ? "Yes" : "No",
+      ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url;
+    a.download = `afghanistan_incidents_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function escHtml(str) {
+    return String(str||"")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+</script>
+</body>
+</html>
