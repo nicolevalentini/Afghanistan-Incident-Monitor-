@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Afghanistan Incident Monitor</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #08080f;
+      --bg2:      #0f0f1a;
+      --bg3:      #111118;
+      --border:   #1e1e3a;
+      --border2:  #2a2a3a;
+      --text:     #e2e0d8;
+      --muted:    #6b7280;
+      --muted2:   #4b5563;
+      --purple:   #7c3aed;
+      --green:    #4ade80;
+      --green-bg: #166534;
+      --red:      #f87171;
+      --amber:    #fbbf24;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Palatino Linotype', Georgia, serif; min-height: 100vh; }
+    input, select, button { font-family: inherit; }
+    a { color: inherit; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0f0a1a 0%, #08080f 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 22px 32px 16px;
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .header-label { font-size: 10px; letter-spacing: 0.3em; color: var(--muted2); text-transform: uppercase; margin-bottom: 3px; }
+    h1 { font-size: 22px; font-weight: bold; color: #f0ece4; }
+    .header-sub { font-size: 12px; color: var(--muted2); margin-top: 3px; }
+
+    /* ── Main layout ── */
+    main { max-width: 1100px; margin: 0 auto; padding: 24px 32px; }
+
+    /* ── Panel ── */
+    .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+    .field label { display: block; font-size: 10px; letter-spacing: 0.15em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .field input[type=date] {
+      background: var(--bg); border: 1px solid var(--border2); border-radius: 4px;
+      padding: 8px 12px; color: var(--text); font-size: 13px; font-family: inherit;
+    }
+    .btn-fetch {
+      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      color: #fff; border: none; border-radius: 5px;
+      padding: 9px 26px; font-size: 14px; cursor: pointer; font-weight: 700;
+    }
+    .btn-fetch:disabled { background: #1e1e2a; color: var(--muted2); cursor: not-allowed; }
+    .btn-export {
+      background: linear-gradient(135deg, #166534, #14532d);
+      color: var(--green); border: 1px solid var(--green-bg);
+      border-radius: 5px; padding: 9px 22px; font-size: 13px; cursor: pointer; font-weight: 600;
+    }
+
+    /* ── Source status pills ── */
+    #source-status { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; }
+    .src-pill {
+      display: flex; align-items: center; gap: 4px;
+      border-radius: 3px; padding: 3px 8px; font-size: 11px;
+      background: var(--bg3); border: 1px solid var(--border2); color: var(--muted);
+    }
+    .src-pill.ok  { background: #0a1a0a; border-color: #166534; color: var(--green); }
+    .src-pill.err { background: #1a0a0a; border-color: #7f1d1d; color: var(--red); }
+
+    /* ── Stats ── */
+    #stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .stat-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 10px 18px; }
+    .stat-num { font-size: 22px; font-weight: bold; }
+    .stat-lbl { font-size: 10px; color: var(--muted2); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* ── Filters ── */
+    #filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+    .filter-label { font-size: 11px; color: var(--muted2); text-transform: uppercase; letter-spacing: 0.1em; }
+    .btn-filter {
+      background: transparent; border: 1px solid var(--border2); color: var(--muted);
+      border-radius: 4px; padding: 4px 12px; font-size: 12px; cursor: pointer;
+    }
+    .btn-filter.active { background: #1e1b4b; border-color: #4f46e5; color: #a5b4fc; }
+    select.filter-select {
+      background: var(--bg2); border: 1px solid var(--border2); color: var(--muted);
+      border-radius: 4px; padding: 5px 10px; font-size: 12px;
+    }
+    .chk-label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+    /* ── Articles ── */
+    .article {
+      border-radius: 6px; padding: 14px 18px; margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .article.pending  { background: var(--bg3); border: 1px solid var(--border2); }
+    .article.verified { background: #071207; border: 1px solid #166534; }
+    .article.dismissed { background: #0c0c0c; border: 1px solid #1f1f1f; opacity: 0.45; }
+
+    .article-top { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+    .article-body { flex: 1; min-width: 0; }
+    .article-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+
+    .lang-badge {
+      border-radius: 3px; padding: 2px 7px; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .src-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      border-radius: 3px; padding: 2px 8px; font-size: 11px; font-weight: 600; white-space: nowrap;
+    }
+    .date-txt { font-size: 11px; color: var(--muted); }
+    .verified-badge { font-size: 11px; color: var(--green); font-weight: 700; }
+
+    .article-title {
+      font-size: 14px; font-weight: 600; line-height: 1.4;
+      text-decoration: none; display: block; color: var(--text);
+    }
+    .article-title:hover { color: #fff; }
+    .article-desc { margin: 5px 0 0; font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .article-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; align-items: flex-start; }
+    .btn-action {
+      background: transparent; border: 1px solid var(--border2); color: #9ca3af;
+      border-radius: 4px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+    }
+    .btn-verify { }
+    .btn-verify.active { background: #166534; border-color: #166534; color: var(--green); }
+    .btn-dismiss { padding: 5px 9px; }
+
+    /* ── Meta editor ── */
+    .meta-editor {
+      background: #0a0a12; border: 1px solid #1e2040; border-radius: 5px;
+      padding: 14px 16px; margin-top: 10px;
+    }
+    .meta-editor-title { font-size: 11px; color: var(--muted2); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
+    .meta-fields { display: flex; gap: 8px; flex-wrap: wrap; }
+    .meta-field { flex: 1; min-width: 110px; }
+    .meta-field label { display: block; font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3px; }
+    .meta-field input {
+      width: 100%; background: #0f0f18; border: 1px solid var(--border2);
+      border-radius: 3px; padding: 5px 8px; color: var(--text); font-size: 12px; font-family: inherit;
+    }
+    .meta-field.wide { flex: 2; min-width: 200px; }
+
+    /* ── Empty state ── */
+    #empty { text-align: center; padding: 70px 20px; color: var(--muted2); }
+    #empty .emoji { font-size: 44px; margin-bottom: 14px; }
+    #empty h2 { font-size: 17px; color: var(--muted); margin-bottom: 6px; }
+    #empty p { font-size: 13px; }
+
+    /* ── Workflow guide ── */
+    .guide { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-top: 28px; text-align: left; }
+    .guide-title { font-size: 10px; letter-spacing: 0.2em; color: var(--muted2); text-transform: uppercase; margin-bottom: 12px; }
+    .guide-step { display: flex; gap: 14px; margin-bottom: 10px; }
+    .guide-step-num { font-weight: 700; color: var(--purple); min-width: 70px; font-size: 13px; }
+    .guide-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Source grid ── */
+    .source-grid { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 28px; }
+
+    /* ── Footer ── */
+    footer { margin-top: 24px; font-size: 11px; color: #2a2a3a; border-top: 1px solid #1e1e2a; padding-top: 16px; }
+
+    /* ── Config notice ── */
+    #config-notice {
+      background: #1a100a; border: 1px solid #92400e; border-radius: 6px;
+      padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #fbbf24; display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-label">Internal Use Only · Security Monitoring</div>
+      <h1>🇦🇫 Afghanistan Incident Monitor</h1>
+      <div class="header-sub">RSS feeds · English · فارسی · پښتو · 15 sources</div>
+    </div>
+    <button class="btn-export" id="btn-export" style="display:none" onclick="exportCSV()">
+      ↓ Export CSV
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- Config notice if API URL not set -->
+  <div id="config-notice">
+    ⚙️ <strong>Setup required:</strong> Open this file and set <code>API_BASE_URL</code> at the top of the script to your backend URL (e.g. <code>https://your-app.onrender.com</code>).
+  </div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="controls">
+      <div class="field">
+        <label>From</label>
+        <input type="date" id="date-from" />
+      </div>
+      <div class="field">
+        <label>To</label>
+        <input type="date" id="date-to" />
+      </div>
+      <button class="btn-fetch" id="btn-fetch" onclick="fetchFeed()">Fetch Latest News</button>
+    </div>
+    <div id="source-status"></div>
+  </div>
+
+  <!-- Stats -->
+  <div id="stats" style="display:none">
+    <div class="stat-box"><div class="stat-num" id="stat-total" style="color:#e2e0d8">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-pending" style="color:#fbbf24">0</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-verified" style="color:#4ade80">0</div><div class="stat-lbl">Verified</div></div>
+    <div class="stat-box"><div class="stat-num" id="stat-dismissed" style="color:#6b7280">0</div><div class="stat-lbl">Dismissed</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div id="filters" style="display:none">
+    <span class="filter-label">Filter:</span>
+    <button class="btn-filter active" onclick="setLang('All', this)">All</button>
+    <button class="btn-filter" onclick="setLang('English', this)">English</button>
+    <button class="btn-filter" onclick="setLang('Farsi', this)">Farsi</button>
+    <button class="btn-filter" onclick="setLang('Pashto', this)">Pashto</button>
+    <select class="filter-select" id="src-filter" onchange="render()">
+      <option value="All">All Sources</option>
+    </select>
+    <button class="btn-filter" id="btn-sort" onclick="toggleSort()">Date ↓</button>
+    <label class="chk-label"><input type="checkbox" id="chk-verified" checked onchange="render()"> Show verified</label>
+    <label class="chk-label"><input type="checkbox" id="chk-dismissed" onchange="render()"> Show dismissed</label>
+  </div>
+
+  <!-- Article list -->
+  <div id="article-list"></div>
+
+  <!-- Empty / landing state -->
+  <div id="empty">
+    <div class="emoji">📡</div>
+    <h2>Ready to fetch news</h2>
+    <p>Optionally set a date range, then click <strong style="color:#a5b4fc">Fetch Latest News</strong>.</p>
+    <div class="source-grid" id="source-grid" style="margin-top:22px"></div>
+    <div class="guide">
+      <div class="guide-title">Workflow</div>
+      <div class="guide-step"><div class="guide-step-num">1. Fetch</div><div class="guide-step-desc">Pulls up to 50 articles per source. Afghan outlets show all articles; Reuters/BBC/RFE/RL are filtered for Afghanistan mentions.</div></div>
+      <div class="guide-step"><div class="guide-step-num">2. Review</div><div class="guide-step-desc">Click ▼ Fill Data on each article, read it, then fill in location, province, attack type, perpetrator, target, and casualties.</div></div>
+      <div class="guide-step"><div class="guide-step-num">3. Verify</div><div class="guide-step-desc">Click Mark Verified once confirmed. Click ✕ to dismiss irrelevant articles (you can restore them anytime).</div></div>
+      <div class="guide-step"><div class="guide-step-num">4. Export</div><div class="guide-step-desc">Click Export CSV at the top — downloads a UTF-8 file ready for Excel with all your structured data pre-filled.</div></div>
+    </div>
+  </div>
+
+  <footer>Internal tool · 15 RSS sources · Always verify against primary sources before reporting</footer>
+</main>
+
+<script>
+  // ── CONFIGURATION ────────────────────────────────────────────────────────────
+  // After deploying your backend, replace the URL below with your actual backend URL.
+  // Example: const API_BASE_URL = "https://afghanistan-monitor.onrender.com";
+  const API_BASE_URL = "https://afghanistan-incident-monitor.onrender.com";
+
+  // ── State ────────────────────────────────────────────────────────────────────
+  let articles = [];      // raw from API, enriched with meta/verified/dismissed
+  let filterLang = "All";
+  let filterSrc  = "All";
+  let sortDir    = "desc";
+  let fetched    = false;
+
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!API_BASE_URL) {
+      document.getElementById("config-notice").style.display = "block";
+    }
+    // Pre-populate source filter & grid from /api/sources
+    if (API_BASE_URL) {
+      fetch(API_BASE_URL + "/api/sources")
+        .then(r => r.json())
+        .then(sources => {
+          const sel = document.getElementById("src-filter");
+          const grid = document.getElementById("source-grid");
+          sources.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id; opt.textContent = s.name;
+            sel.appendChild(opt);
+            const badge = document.createElement("span");
+            badge.className = "src-badge";
+            badge.style.cssText = `background:${s.color}22;border:1px solid ${s.color}55;color:${s.color}`;
+            badge.textContent = s.flag + " " + s.name;
+            grid.appendChild(badge);
+          });
+        }).catch(() => {});
+    }
+  });
+
+  // ── Fetch ─────────────────────────────────────────────────────────────────────
+  async function fetchFeed() {
+    if (!API_BASE_URL) { alert("Please set API_BASE_URL in the HTML file first."); return; }
+    const btn = document.getElementById("btn-fetch");
+    btn.disabled = true; btn.textContent = "⟳ Fetching…";
+
+    const from = document.getElementById("date-from").value;
+    const to   = document.getElementById("date-to").value;
+    const params = new URLSearchParams();
+    if (from) params.set("date_from", from);
+    if (to)   params.set("date_to", to);
+
+    try {
+      const r = await fetch(`${API_BASE_URL}/api/feed?${params}`);
+      if (!r.ok) throw new Error(`Server returned ${r.status}`);
+      const data = await r.json();
+
+      // Enrich items with UI state
+      articles = data.items.map((item, i) => ({
+        ...item,
+        _id: i,
+        _meta: {},
+        _verified: false,
+        _dismissed: false,
+        _expanded: false,
+      }));
+
+      renderSourceStatus(data.sources);
+      fetched = true;
+      document.getElementById("empty").style.display = "none";
+      document.getElementById("stats").style.display = "flex";
+      document.getElementById("filters").style.display = "flex";
+      render();
+    } catch(e) {
+      alert("Error fetching feed: " + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "Fetch Latest News";
+    }
+  }
+
+  function renderSourceStatus(sources) {
+    const el = document.getElementById("source-status");
+    el.innerHTML = "";
+    Object.entries(sources).forEach(([id, info]) => {
+      const pill = document.createElement("div");
+      pill.className = "src-pill " + (info.status === "ok" ? "ok" : "err");
+      const icon = info.status === "ok" ? "✓" : "✗";
+      const label = id.replace(/_/g, " ");
+      const count = info.status === "ok" ? ` (${info.count})` : "";
+      pill.textContent = icon + " " + label + count;
+      if (info.error) pill.title = info.error;
+      el.appendChild(pill);
+    });
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+  function render() {
+    updateStats();
+    const showVerified  = document.getElementById("chk-verified").checked;
+    const showDismissed = document.getElementById("chk-dismissed").checked;
+    filterSrc = document.getElementById("src-filter").value;
+
+    let visible = articles.filter(a => {
+      if (!showDismissed && a._dismissed) return false;
+      if (!showVerified  && a._verified)  return false;
+      if (filterLang !== "All" && a.source_lang !== filterLang) return false;
+      if (filterSrc  !== "All" && a.source_id   !== filterSrc)  return false;
+      return true;
+    });
+
+    visible.sort((a, b) => {
+      const da = a.date || ""; const db = b.date || "";
+      return sortDir === "desc" ? db.localeCompare(da) : da.localeCompare(db);
+    });
+
+    const list = document.getElementById("article-list");
+    list.innerHTML = "";
+    if (visible.length === 0 && fetched) {
+      list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#4b5563">
+        <div style="font-size:36px;margin-bottom:10px">🔍</div>
+        <div style="font-size:15px">No articles found. Try widening the date range.</div>
+      </div>`;
+      return;
+    }
+    visible.forEach(a => list.appendChild(buildCard(a)));
+
+    // Export button
+    const exportBtn = document.getElementById("btn-export");
+    const total = articles.filter(a => !a._dismissed).length;
+    exportBtn.style.display = total > 0 ? "block" : "none";
+    exportBtn.textContent = `↓ Export CSV (${total} rows)`;
+  }
+
+  function updateStats() {
+    const total     = articles.filter(a => !a._dismissed).length;
+    const verified  = articles.filter(a => a._verified).length;
+    const dismissed = articles.filter(a => a._dismissed).length;
+    const pending   = articles.filter(a => !a._verified && !a._dismissed).length;
+    document.getElementById("stat-total").textContent     = total;
+    document.getElementById("stat-verified").textContent  = verified;
+    document.getElementById("stat-dismissed").textContent = dismissed;
+    document.getElementById("stat-pending").textContent   = pending;
+  }
+
+  // ── Card builder ──────────────────────────────────────────────────────────────
+  function buildCard(a) {
+    const div = document.createElement("div");
+    div.className = "article " + (a._verified ? "verified" : a._dismissed ? "dismissed" : "pending");
+    div.style.borderLeft = `3px solid ${a._verified ? "#4ade80" : a._dismissed ? "#374151" : a.source_color}`;
+
+    const langColors = { English: ["#1e3a5f","#60a5fa"], Farsi: ["#3b1f4e","#c084fc"], Pashto: ["#1f3d1f","#4ade80"] };
+    const [lbg, lfg] = langColors[a.source_lang] || ["#333","#fff"];
+
+    div.innerHTML = `
+      <div class="article-top">
+        <div class="article-body">
+          <div class="article-meta">
+            <span class="lang-badge" style="background:${lbg};color:${lfg}">${a.source_lang}</span>
+            <span class="src-badge" style="background:${a.source_color}22;border:1px solid ${a.source_color}55;color:${a.source_color}">${a.source_flag} ${a.source_name}</span>
+            <span class="date-txt">${a.date || "Unknown date"}</span>
+            ${a._verified ? '<span class="verified-badge">✓ Verified</span>' : ""}
+            ${a._dismissed ? '<span style="font-size:11px;color:#6b7280">Dismissed</span>' : ""}
+          </div>
+          <a class="article-title" href="${escHtml(a.link)}" target="_blank" rel="noreferrer">${escHtml(a.title)}</a>
+          ${a.description ? `<p class="article-desc">${escHtml(a.description.slice(0, 220))}${a.description.length > 220 ? "…" : ""}</p>` : ""}
+        </div>
+        <div class="article-actions">
+          <button class="btn-action" onclick="toggleExpand(${a._id})">▼ Fill Data</button>
+          <button class="btn-action btn-verify ${a._verified ? "active" : ""}" onclick="toggleVerify(${a._id})">
+            ${a._verified ? "✓ Verified" : "Mark Verified"}
+          </button>
+          <button class="btn-action btn-dismiss" onclick="toggleDismiss(${a._id})" title="${a._dismissed ? "Restore" : "Dismiss"}">
+            ${a._dismissed ? "↩" : "✕"}
+          </button>
+        </div>
+      </div>
+      ${a._expanded ? buildMetaEditor(a) : ""}
+    `;
+    return div;
+  }
+
+  function buildMetaEditor(a) {
+    const m = a._meta;
+    const f = (key, label, placeholder) =>
+      `<div class="meta-field">
+        <label>${label}</label>
+        <input type="text" value="${escHtml(m[key]||"")}" placeholder="${placeholder}"
+          onchange="updateMeta(${a._id},'${key}',this.value)" />
+      </div>`;
+    return `
+      <div class="meta-editor">
+        <div class="meta-editor-title">✏️ Fill in structured data — then mark as verified</div>
+        <div class="meta-fields">
+          ${f("location",    "Location",    "City / District")}
+          ${f("province",    "Province",    "Province")}
+          ${f("attackType",  "Attack Type", "IED / Clash / Airstrike…")}
+          ${f("perpetrator", "Perpetrator", "Taliban / ISIS-K…")}
+          ${f("target",      "Target",      "Civilians / Forces…")}
+          ${f("killed",      "Killed",      "0")}
+          ${f("wounded",     "Wounded",     "0")}
+          <div class="meta-field wide">
+            <label>Notes</label>
+            <input type="text" value="${escHtml(m.notes||"")}" placeholder="Any additional context…"
+              onchange="updateMeta(${a._id},'notes',this.value)" />
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Actions ───────────────────────────────────────────────────────────────────
+  function toggleExpand(id) {
+    articles[id]._expanded = !articles[id]._expanded;
+    render();
+  }
+  function toggleVerify(id) {
+    articles[id]._verified  = !articles[id]._verified;
+    articles[id]._dismissed = false;
+    render();
+  }
+  function toggleDismiss(id) {
+    articles[id]._dismissed = !articles[id]._dismissed;
+    render();
+  }
+  function updateMeta(id, key, val) {
+    articles[id]._meta[key] = val;
+    updateStats();
+  }
+  function setLang(lang, btn) {
+    filterLang = lang;
+    document.querySelectorAll("#filters .btn-filter").forEach(b => {
+      if (["All","English","Farsi","Pashto"].includes(b.textContent.trim())) b.classList.remove("active");
+    });
+    btn.classList.add("active");
+    render();
+  }
+  function toggleSort() {
+    sortDir = sortDir === "desc" ? "asc" : "desc";
+    document.getElementById("btn-sort").textContent = "Date " + (sortDir === "desc" ? "↓" : "↑");
+    render();
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────────
+  function exportCSV() {
+    const headers = ["Date","Headline","Source","Language","URL",
+      "Location","Province","Attack Type","Perpetrator","Target",
+      "Killed","Wounded","Notes","Verified"];
+    const rows = articles
+      .filter(a => !a._dismissed)
+      .map(a => [
+        a.date, a.title, a.source_name, a.source_lang, a.link,
+        a._meta.location||"", a._meta.province||"", a._meta.attackType||"",
+        a._meta.perpetrator||"", a._meta.target||"",
+        a._meta.killed||"", a._meta.wounded||"", a._meta.notes||"",
+        a._verified ? "Yes" : "No",
+      ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v||"").replace(/"/g,'""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `afghanistan_incidents_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function escHtml(str) {
+    return String(str||"")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+</script>
+</body>
+</html>
